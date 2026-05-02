@@ -9,7 +9,7 @@ pipeline {
 
         stage('Checkout') {
             steps {
-                git 'https://github.com/your-repo.git'
+                git 'https://github.com/Navbila-K/Node.js-app.git'
             }
         }
 
@@ -50,7 +50,7 @@ pipeline {
 
         stage('Push to DockerHub') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds',
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-token',
                     usernameVariable: 'USER', passwordVariable: 'PASS')]) {
 
                     sh '''
