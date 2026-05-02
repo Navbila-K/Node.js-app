@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        IMAGE_NAME = "your-dockerhub-username/nodejs-app"
+        IMAGE_NAME = "navbilak/nodejs-app"
         SONAR_PROJECT_KEY = "nodejs-app"
     }
 
@@ -31,8 +31,7 @@ pipeline {
                         sonar-scanner ^
                         -Dsonar.projectKey=%SONAR_PROJECT_KEY% ^
                         -Dsonar.sources=. ^
-                        -Dsonar.host.url=http://sonarqube:9000 ^
-                        -Dsonar.login=%SONAR_TOKEN%
+                        -Dsonar.host.url=http://localhost:9000
                         """
                     }
                 }
@@ -57,9 +56,11 @@ pipeline {
 
         stage('Push to DockerHub') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds',
+                withCredentials([usernamePassword(
+                    credentialsId: 'dockerhub-token',
                     usernameVariable: 'USER',
-                    passwordVariable: 'PASS')]) {
+                    passwordVariable: 'PASS'
+                )]) {
 
                     bat """
                     echo %PASS% | docker login -u %USER% --password-stdin
@@ -71,19 +72,17 @@ pipeline {
 
         stage('Run Container Locally') {
             steps {
-                bat """
-                docker run -d -p 3000:3000 %IMAGE_NAME%:latest || exit 0
-                """
+                bat "docker run -d -p 3000:3000 %IMAGE_NAME%:latest || exit 0"
             }
         }
     }
 
     post {
         success {
-            echo "Pipeline completed successfully 🚀"
+            echo "✅ Pipeline completed successfully"
         }
         failure {
-            echo "Pipeline failed ❌ check logs"
+            echo "❌ Pipeline failed - check logs"
         }
     }
 }
