@@ -7,12 +7,6 @@ pipeline {
 
     stages {
 
-        stage('Checkout') {
-            steps {
-                git 'https://github.com/Navbila-K/Node.js-app.git'
-            }
-        }
-
         stage('Test') {
             steps {
                 sh 'npm install'
