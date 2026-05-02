@@ -61,7 +61,6 @@ pipeline {
                     usernameVariable: 'USER',
                     passwordVariable: 'PASS'
                 )]) {
-
                     bat """
                     echo %PASS% | docker login -u %USER% --password-stdin
                     docker push %IMAGE_NAME%:latest
@@ -79,10 +78,10 @@ pipeline {
 
     post {
         success {
-            echo "✅ Pipeline completed successfully"
+            echo "✅ Pipeline SUCCESS - Everything completed"
         }
         failure {
-            echo "❌ Pipeline failed - check logs"
+            echo "❌ Pipeline FAILED - check logs"
         }
     }
 }
