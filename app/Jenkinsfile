@@ -2,28 +2,39 @@ pipeline {
     agent any
 
     environment {
-        IMAGE_NAME = "navbilak/ci-app"
+        IMAGE_NAME = "your-dockerhub-username/nodejs-app"
+        SONAR_PROJECT_KEY = "nodejs-app"
     }
 
     stages {
 
-        stage('Test') {
+        stage('Checkout') {
             steps {
-                bat 'npm install'
-                bat 'npm test'
+                checkout scm
+            }
+        }
+
+        stage('Test (npm install + test)') {
+            steps {
+                dir('app') {
+                    bat 'npm install'
+                    bat 'npm test'
+                }
             }
         }
 
         stage('SonarQube Analysis') {
             steps {
-                withSonarQubeEnv('sonar') {
-                    bat '''
-                    sonar-scanner ^
-                    -Dsonar.projectKey=ci-app ^
-                    -Dsonar.sources=. ^
-                    -Dsonar.host.url=http://sonarqube:9000 ^
-                    -Dsonar.login=%SONAR_TOKEN%
-                    '''
+                dir('app') {
+                    withSonarQubeEnv('sonar') {
+                        bat """
+                        sonar-scanner ^
+                        -Dsonar.projectKey=%SONAR_PROJECT_KEY% ^
+                        -Dsonar.sources=. ^
+                        -Dsonar.host.url=http://sonarqube:9000 ^
+                        -Dsonar.login=%SONAR_TOKEN%
+                        """
+                    }
                 }
             }
         }
@@ -38,27 +49,41 @@ pipeline {
 
         stage('Docker Build') {
             steps {
-                bat 'docker build -t %IMAGE_NAME%:latest .'
+                dir('app') {
+                    bat "docker build -t %IMAGE_NAME%:latest ."
+                }
             }
         }
 
         stage('Push to DockerHub') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'dockerhub-token',
-                    usernameVariable: 'USER', passwordVariable: 'PASS')]) {
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds',
+                    usernameVariable: 'USER',
+                    passwordVariable: 'PASS')]) {
 
-                    bat '''
+                    bat """
                     echo %PASS% | docker login -u %USER% --password-stdin
                     docker push %IMAGE_NAME%:latest
-                    '''
+                    """
                 }
             }
         }
 
-        stage('Run Container') {
+        stage('Run Container Locally') {
             steps {
-                bat 'docker run -d -p 3000:3000 %IMAGE_NAME%:latest || exit 0'
+                bat """
+                docker run -d -p 3000:3000 %IMAGE_NAME%:latest || exit 0
+                """
             }
+        }
+    }
+
+    post {
+        success {
+            echo "Pipeline completed successfully 🚀"
+        }
+        failure {
+            echo "Pipeline failed ❌ check logs"
         }
     }
 }
