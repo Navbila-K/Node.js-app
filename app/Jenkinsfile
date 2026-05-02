@@ -57,7 +57,6 @@ pipeline {
                     usernameVariable: 'USER',
                     passwordVariable: 'PASS'
                 )]) {
-
                     bat '''
                     echo %PASS% | docker login -u %USER% --password-stdin
                     docker push %IMAGE_NAME%:latest
@@ -69,8 +68,8 @@ pipeline {
         stage('Run Container Locally') {
             steps {
                 bat '''
-                docker stop node-app || exit 0
-                docker rm node-app || exit 0
+                docker stop node-app || echo "No container to stop"
+                docker rm node-app || echo "No container to remove"
                 docker run -d -p 3000:3000 --name node-app %IMAGE_NAME%:latest
                 '''
             }
