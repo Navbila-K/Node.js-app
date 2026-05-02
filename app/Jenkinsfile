@@ -2,8 +2,9 @@ pipeline {
     agent any
 
     environment {
-        IMAGE_NAME = "navbilak/nodejs-app"   // change if needed
+        IMAGE_NAME = "navbilak/nodejs-app"
         SONAR_PROJECT_KEY = "nodejs-app"
+        SONAR_HOST_URL = "http://host.docker.internal:9000"
     }
 
     stages {
@@ -26,15 +27,17 @@ pipeline {
         stage('SonarQube Analysis (Docker Scanner)') {
             steps {
                 dir('app') {
-                    bat '''
-                    docker run --rm ^
-                      -e SONAR_HOST_URL="http://host.docker.internal:9000" ^
-                      -e SONAR_TOKEN=%SONAR_TOKEN% ^
-                      -v "%cd%:/usr/src" ^
-                      sonarsource/sonar-scanner-cli ^
-                      -Dsonar.projectKey=%SONAR_PROJECT_KEY% ^
-                      -Dsonar.sources=.
-                    '''
+                    withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
+                        bat '''
+                        docker run --rm ^
+                          -e SONAR_HOST_URL=%SONAR_HOST_URL% ^
+                          -e SONAR_TOKEN=%SONAR_TOKEN% ^
+                          -v "%cd%:/usr/src" ^
+                          sonarsource/sonar-scanner-cli ^
+                          -Dsonar.projectKey=%SONAR_PROJECT_KEY% ^
+                          -Dsonar.sources=.
+                        '''
+                    }
                 }
             }
         }
@@ -66,7 +69,9 @@ pipeline {
         stage('Run Container Locally') {
             steps {
                 bat '''
-                docker run -d -p 3000:3000 %IMAGE_NAME%:latest || exit 0
+                docker stop node-app || exit 0
+                docker rm node-app || exit 0
+                docker run -d -p 3000:3000 --name node-app %IMAGE_NAME%:latest
                 '''
             }
         }
